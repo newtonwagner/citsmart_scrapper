@@ -5,7 +5,7 @@ Created on Tue Sep 12 13:40:42 2023
 @author: newton
 """
 
-#%% Importar as bibliotecas necessarias
+#%% Importing
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service as ChromeService
 from webdriver_manager.chrome import ChromeDriverManager
@@ -15,70 +15,70 @@ from time import sleep
 import re
 import pandas as pd
 
-#%% Entrar no SIGEDE (Citsmart)
+#%% Creating driver and getting to Citsmart page
 
 driver = webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()))
 driver.get('https://yourCitsmartUrl')
 
-#%% Logar com usuario e senha
+#%% Login
 
 sleep(10)
 #//input[@id="user"]
-campo_user = driver.find_element(By.XPATH, "//input[@id='user']")
-campo_user.send_keys('username')
+field_user = driver.find_element(By.XPATH, "//input[@id='user']")
+field_user.send_keys('username')
 
 #//input[@id="senha"]
-campo_senha = driver.find_element(By.XPATH, "//input[@id='senha']")
-campo_senha.send_keys('password')
+field_password = driver.find_element(By.XPATH, "//input[@id='senha']")
+field_password.send_keys('password')
 
 #//button[@id]
-botao_entrar = driver.find_element(By.XPATH, "//button[@id]")
-botao_entrar.click()
+button_enter = driver.find_element(By.XPATH, "//button[@id]")
+button_enter.click()
 
-#%% Entrar no Módulo de Atendimento
+#%% Get to service module (url) after login
 
 sleep(6)
 driver.get('https://yourCitsmartUrl/ServiceMOdule')
 
-#%% Selecionar "Ver 200 por página"
+#%% Select "View 200 per page"
 
 sleep(4)
 #//select[@id='itensPorPagina']
-campo_porPagina = driver.find_element(By.XPATH, "//select[@id='itensPorPagina']")
-opcoes_porPagina = Select(campo_porPagina)
-opcoes_porPagina.select_by_visible_text('200')
+field_perPage = driver.find_element(By.XPATH, "//select[@id='itensPorPagina']")
+option_perPage = Select(field_perPage)
+option_perPage.select_by_visible_text('200')
 
-#%% Varrer e registrar os Numeros de Solicitacoes
+#%% Scrap the page identifying tickets
 
-# recupera cada chamado do sigede separadamente
-elementos_sigedes = driver.find_elements(By.XPATH, "//div[contains(@class, 'listaDetalhada')]")
+# search list of tickets
+elements_tickets = driver.find_elements(By.XPATH, "//div[contains(@class, 'listaDetalhada')]")
 
-# pattern para o numero do sigede
-regex_numero = re.compile('\[(\d{5,6})\]')
-# pattern para a data de criacao
-regex_data = re.compile('Criada em.?\n(\d{2}\/\d{2}\/\d{4})')
-# pattern para demandante
-regex_autor = re.compile('Criado por.?\n([^\(]+)')
-# pattern para a situacao
-regex_situacao = re.compile('Situa..o.?\n(.+)')
-# pattern para o servico
-regex_servico = re.compile('Servi.o.?\n(.*)')
+# pattern to ticket number
+regex_number = re.compile('\[(\d{5,6})\]')
+# pattern to create date
+regex_create_date = re.compile('Criada em.?\n(\d{2}\/\d{2}\/\d{4})')
+# pattern to author
+regex_author = re.compile('Criado por.?\n([^\(]+)')
+# pattern to status
+regex_status = re.compile('Situa..o.?\n(.+)')
+# pattern to service name
+regex_service_name = re.compile('Servi.o.?\n(.*)')
 
 #%% Varre os sigedes printando os encontrados
 
-lista_sigedes = []
-for sigede in elementos_sigedes:
-    conteudo = sigede.text
-    numero = re.search(regex_numero, conteudo).group(1)
-    criado_em = re.search(regex_data, conteudo).group(1)
-    situacao = re.search(regex_situacao, conteudo).group(1)
-    autor = re.search(regex_autor, conteudo).group(1)
-    servico = re.search(regex_servico, conteudo)
-    if (servico != None):
-        lista_sigedes.append([numero, servico.group(1), criado_em, autor, situacao])
+list_tickets = []
+for ticket in elements_tickets:
+    content = ticket.text
+    ticket_number = re.search(regex_number, content).group(1)
+    ticket_create_date = re.search(regex_create_date, content).group(1)
+    ticket_status = re.search(regex_status, content).group(1)
+    ticket_author = re.search(regex_author, content).group(1)
+    ticket_service = re.search(regex_service_name, content)
+    if (ticket_service != None):
+        list_tickets.append([ticket_number, ticket_service.group(1), ticket_create_date, ticket_author, ticket_status])
 
-sigedes = pd.DataFrame(lista_sigedes, columns=['numero', 'servico', 'criado_em', 'autor', 'situacao'])
-print(sigedes)
+tickets = pd.DataFrame(list_tickets, columns=['numero', 'servico', 'criado_em', 'autor', 'situacao'])
+print(tickets)
 
 #%% Fecha o webdriver
 
